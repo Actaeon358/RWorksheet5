@@ -17,7 +17,9 @@ tv show, tv rating, the number of people who voted, the number of episodes, the 
 #install.packages("rvest")
 #install.packages("polite")
 #install.packages("httr")
+#install.packages("usethis")
 
+library(dplyr)
 library(rvest)
 library(polite)
 library(httr)
@@ -30,40 +32,125 @@ session
 ranks <- scrape(session) %>%
     html_nodes("div.sc-94da5b1b-0.soBIM.meter-const-ranking.sc-479faa3c-6.glWBvR.cli-meter-title-header") %>%
     html_text
-ranks
+ranks50 <- ranks[1:50]
+ranks50
+
 
 title <- scrape(session) %>%
     html_nodes("h3.ipc-title__text") %>%
     html_text
-title
-title_list_sub <- title[2:101]
-title_list_sub
+
+title50 <- title[2:50]
+title50
+
 
 
 tv_rating <- scrape(session) %>%
-    html_nodes("span.ipc-rating-star.ipc-rating-star--base.ipc-rating-star--imdb.ratingGroup--imdb-rating") %>%
+    html_nodes("span.ipc-rating-star.ipc-rating-star--base.ipc-rating-star--imdb.ratingGroup--imdb-rating:contains('.')") %>%
     html_text
 
-tv_rating
+tv_rating50 <- tv_rating[1:50]
+tv_rating50
+
+
 
 num_votes <- scrape(session) %>%
     html_nodes("span.ipc-rating-star--voteCount") %>%
     html_text
-num_votes
+
+num_votes50 <- num_votes[1:50]
+num_votes50
+
 
 num_eps <- scrape(session) %>%
     html_nodes("span.sc-479faa3c-8.bNrEFi.cli-title-metadata-item:contains('eps')") %>%
+    html_text %>%
+  gsub("\\D", "", .)
+num_eps50 <- num_eps[1:50]
+num_eps50
+
+
+year_released <- scrape(session) %>%
+    html_nodes("span.sc-479faa3c-8.bNrEFi.cli-title-metadata-item:contains('20')") %>%
     html_text
-num_eps
+year_released50 <- year_released[1:50]
+
+
+```
+2. From the 50 tv shows, select at least 5 tv shows to scrape the user reviews that will include the
+reviewer’s name, date of reviewed, user rating, title of the review, and text reviews.
+```{r}
+
+link_of_list <- scrape(session) %>%
+  html_nodes('a.ipc-title-link-wrapper') %>%
+  html_attr('href')
+
+link_of_list5 <- link_of_list[1:10]
+
+
+for (i in 1:10) {
+ link_of_list5[i] <- paste0("https://imdb.com", link_of_list5[i], sep = "")
+}
+
+
+link_of_list10 <- as.data.frame(link_of_list5)
+
+
+write.csv(link_of_list10, file = "link_of_list10.csv")
 
 
 ```
 
 ```{r}
 
-```
+rowrow <- 1
 
-```{r}
+reviewof5 <- data.frame()
+
+for (row in 1:5){
+  
+  url  <- link_of_list10$link_of_list5[rowrow]
+  
+  session2 <- bow(url,
+                  user_agent = "abdul's education")
+  
+  webpage <- scrape(session2)
+  
+  nameofreviewer <- html_text(html_nodes(webpage,"a.ipc-link.ipc-link--base"))
+  nameofreviewer <- nameofreviewer[6]
+  nameofreviewer
+  
+   date_of_review <- html_text(html_nodes(webpage,"li.ipc-inline-list__item.review-date"))
+   date_of_review
+   
+   
+   user_rating <- html_text(html_nodes(webpage,"span.ipc-rating-star.ipc-rating-star--base.ipc-rating-star--otherUserAlt.review-rating"))
+   user_rating
+   
+   
+   title_of_review <- html_text(html_nodes(webpage,"span.sc-27d2f80b-1.kyzKWJ"))
+  title_of_review
+  
+  text_review <- html_text(html_nodes(webpage,"div.ipc-html-content-inner-div"))
+  text_review <- text_review[6]
+  
+  
+ 
+ cat("name of user", nameofreviewer, "date of review: ", date_of_review, "rating of review : ", user_rating, "title of review: ", title_of_review, "context of review: ", text_review,"\n\n")
+ 
+   reviewof5[rowrow, 1] <- nameofreviewer
+   reviewof5[rowrow, 2] <- date_of_review
+   reviewof5[rowrow, 3] <- user_rating
+   reviewof5[rowrow, 4] <- title_of_review
+   reviewof5[rowrow, 5] <- text_review
+ 
+ rowrow <- rowrow + 1
+
+Sys.sleep(3)
+
+}
+
+
 
 ```
 
